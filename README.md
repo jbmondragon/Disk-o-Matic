@@ -4,21 +4,20 @@ _This project is developed by **Jake Mondragon**, **Benedict Pagba**, **Justin M
 
 ## Overview
 
-This application is an implementation in Java of 7 page replacement algorithms: FIFO (First-In, First-Out), LRU (Least Recently Used), OPT (Optimal), Second Chance, Enhanced Second Chance, LFU (Least Frequently Used), and MFU (Most Frequently Used).
-
+This application is an implementation in Java of 66 Disk Scheduling Algorithms: FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK.
 ## Appendix A
 
-- Reference string length should be between 10-40
-- Frame size should be between 3-10
-- Reference values should be between 0-20
+- The cylinder line is always starting with 0 and ending with 199.
+- Order of Requests Queue: (maximum requests is up to 40).
+- R/W head starting position.
 - User has 3 choices how to generate the data needed by the simulator (See Appendix B)
 
 ## Appendix B
 
 Generated data can be obtained through random, user-defined input, and user-defined input from a file
 
-- Random: the program will randomly generate the reference string and frame size.
-- User-defined input: the user will input the reference string and frame size through an input screen in the simulator.
+- Random: the program will randomly generate Order of Request Queue.
+- User-defined input: the user will input the rOrder of Request Queuee through an input screen in the simulator.
 - User-defined input from a CSV file: the user will input the data by reading a CSV file.
 
 ---
@@ -51,8 +50,8 @@ You can run the simulator by:
 ### 4. Create and Run a jar file
 
 ```bash
-jar cfe OPRA.jar Main -C out .
-java -jar OPRA.jar
+jar cfe Disc-o-Matic.jar Main -C out .
+java -jar Disc-o-Matic.jar
 ```
 
 ### 5. Run the .exe by double clicking the file
