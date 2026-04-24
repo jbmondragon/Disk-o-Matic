@@ -1,6 +1,9 @@
 package gui;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.net.URL;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -35,6 +38,30 @@ public class Menu extends JPanel {
             "/img/look.png",
             "/img/clook.png"
     };
+
+    // ---------------------------------------------------------------
+    // Null-safe image loader
+    // Returns a scaled ImageIcon, or null if the resource is missing.
+    // ---------------------------------------------------------------
+    private ImageIcon loadImage(String resourcePath, int width, int height) {
+        try {
+            URL url = getClass().getResource(resourcePath);
+            if (url == null) return null;
+            BufferedImage img = ImageIO.read(url);
+            if (img == null) return null;
+            return new ImageIcon(img.getScaledInstance(width, height, Image.SCALE_SMOOTH));
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    // Convenience overload: scales to the current size of a label (falls back to defaults).
+    private ImageIcon loadImage(String resourcePath, JLabel targetLabel,
+                                int defaultWidth, int defaultHeight) {
+        int w = targetLabel.getWidth()  > 0 ? targetLabel.getWidth()  : defaultWidth;
+        int h = targetLabel.getHeight() > 0 ? targetLabel.getHeight() : defaultHeight;
+        return loadImage(resourcePath, w, h);
+    }
 
     public Menu(Mainframe frame) {
         this.mainframe = frame;
@@ -94,6 +121,7 @@ public class Menu extends JPanel {
         helpButton.setMinimumSize(buttonSize);
         helpButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         helpButton.addActionListener(e -> mainframe.showCard("HELP"));
+
         leftPanel.add(titleLabel);
         leftPanel.add(subtitleLabel);
         leftPanel.add(Box.createVerticalGlue());
@@ -125,21 +153,20 @@ public class Menu extends JPanel {
         algoPanel.setBackground(Mainframe.BG_LIGHT_GRAY);
         algoPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        JLabel algoTitle = new JLabel("Page Replacement Algorithms:");
+        JLabel algoTitle = new JLabel("Disk Scheduling Algorithms:");
         algoTitle.setFont(new Font("Arial", Font.BOLD, 14));
-        algoTitle.setBorder(new EmptyBorder(0, 0, 10, 0)); // Space below title
+        algoTitle.setBorder(new EmptyBorder(0, 0, 10, 0));
         algoPanel.add(algoTitle, BorderLayout.NORTH);
 
         JList<String> algoList = new JList<>(algorithms);
         algoList.setFont(new Font("Arial", Font.BOLD, 13));
         algoList.setBackground(Mainframe.BG_LIGHT_GRAY);
         algoList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        // Explicitly tell the list to size itself for exactly 6 items
         algoList.setVisibleRowCount(6);
         algoList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
-            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
-                    boolean cellHasFocus) {
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
                 super.getListCellRendererComponent(list, value, index, isSelected, false);
                 setBorder(new EmptyBorder(3, 5, 3, 5));
                 return this;
@@ -163,7 +190,6 @@ public class Menu extends JPanel {
         descriptionArea.setEditable(false);
         descriptionArea.setLineWrap(true);
         descriptionArea.setWrapStyleWord(true);
-        // Set rows to roughly match the height of the list panel
         descriptionArea.setRows(6);
 
         JScrollPane descScroll = new JScrollPane(descriptionArea);
@@ -174,92 +200,95 @@ public class Menu extends JPanel {
         rightTop.add(algoPanel);
         rightTop.add(descPanel);
 
-        // WEIGHTY = 0.0 -> Tells layout to make this panel EXACTLY as tall as its
-        // content needs, no taller.
         gbcRight.gridx = 0;
         gbcRight.gridy = 0;
         gbcRight.weighty = 0.0;
         gbcRight.insets = new Insets(0, 0, 10, 0);
         rightContainer.add(rightTop, gbcRight);
 
-        // --- Right Bottom Panel (Image Placeholder) ---
+        // --- Right Bottom Panel (Image area) ---
+        final int defaultWidth  = 400;
+        final int defaultHeight = 300;
+
         JPanel rightBottom = new JPanel(new BorderLayout());
         rightBottom.setBackground(Mainframe.BG_LIGHT_GRAY);
-        JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
-        // Show cover image by default, but scale it dynamically like the others
-        ImageIcon coverIcon = new ImageIcon(getClass().getResource("/img/cover.png"));
-        // Use a default size for initial display
-        int defaultWidth = 400;
-        int defaultHeight = 300;
-        Image scaledCover = coverIcon.getImage().getScaledInstance(defaultWidth, defaultHeight, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(scaledCover));
 
-        // Ensure the cover image always matches the size of the algorithm images
+        JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
+        imageLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        imageLabel.setForeground(new Color(160, 80, 80));
+
+        // --- Load cover image (null-safe) ---
+        // coverIcon may be null if /img/cover.png is not on the classpath.
+        final ImageIcon[] coverIconHolder = { loadImage("/img/cover.png", defaultWidth, defaultHeight) };
+        if (coverIconHolder[0] != null) {
+            imageLabel.setIcon(coverIconHolder[0]);
+        } else {
+            // Friendly placeholder text shown instead of the cover image
+            imageLabel.setText("<html><center>Select an algorithm<br>to see its diagram</center></html>");
+        }
+
+        // Resize cover image with the panel (null-safe)
         rightBottom.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentResized(java.awt.event.ComponentEvent e) {
-                int width = imageLabel.getWidth();
-                int height = imageLabel.getHeight();
-                if (width > 0 && height > 0 && algoList.getSelectedIndex() == -1) {
-                    Image scaled = coverIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-                    imageLabel.setIcon(new ImageIcon(scaled));
+                if (algoList.getSelectedIndex() != -1) return; // algo image is shown; don't overwrite
+                if (coverIconHolder[0] == null) return;        // no cover image — nothing to scale
+                ImageIcon scaled = loadImage("/img/cover.png", imageLabel, defaultWidth, defaultHeight);
+                if (scaled != null) {
+                    coverIconHolder[0] = scaled;               // keep holder current for deselect revert
+                    imageLabel.setIcon(scaled);
                 }
             }
         });
+
         rightBottom.add(imageLabel, BorderLayout.CENTER);
 
-        // WEIGHTY = 1.0 -> Tells layout to give all remaining vertical space to this
-        // image panel.
         gbcRight.gridx = 0;
         gbcRight.gridy = 1;
         gbcRight.weighty = 1.0;
         gbcRight.insets = new Insets(5, 0, 0, 0);
         rightContainer.add(rightBottom, gbcRight);
 
-        // === Add Interaction Logic ===
+        // === Interaction: list selection → show algorithm image + description ===
         algoList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                int selectedIndex = algoList.getSelectedIndex();
-                if (selectedIndex != -1) {
-                    descriptionArea.setText("What does it do?:\n\n" + descriptions[selectedIndex]);
-                    var url = getClass().getResource(imageFiles[selectedIndex]);
-                    if (url != null) {
-                        ImageIcon icon = new ImageIcon(url);
-                        int width = imageLabel.getWidth();
-                        int height = imageLabel.getHeight();
-                        if (width > 0 && height > 0) {
-                            Image scaledImage = icon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-                            imageLabel.setIcon(new ImageIcon(scaledImage));
-                        } else {
-                            Image scaledImage = icon.getImage().getScaledInstance(defaultWidth, defaultHeight,
-                                    Image.SCALE_SMOOTH);
-                            imageLabel.setIcon(new ImageIcon(scaledImage));
-                        }
-                    }
+            if (e.getValueIsAdjusting()) return;
+
+            int idx = algoList.getSelectedIndex();
+            if (idx != -1) {
+                // Show description
+                descriptionArea.setText("What does it do?:\n\n" + descriptions[idx]);
+
+                // Load algorithm diagram (null-safe)
+                ImageIcon icon = loadImage(imageFiles[idx], imageLabel, defaultWidth, defaultHeight);
+                if (icon != null) {
+                    imageLabel.setIcon(icon);
+                    imageLabel.setText("");
                 } else {
-                    // No selection: revert to cover image and scale to current label size
-                    int width = imageLabel.getWidth();
-                    int height = imageLabel.getHeight();
-                    if (width > 0 && height > 0) {
-                        Image scaledCover2 = coverIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
-                        imageLabel.setIcon(new ImageIcon(scaledCover2));
-                    } else {
-                        Image scaledCover2 = coverIcon.getImage().getScaledInstance(defaultWidth, defaultHeight,
-                                Image.SCALE_SMOOTH);
-                        imageLabel.setIcon(new ImageIcon(scaledCover2));
-                    }
-                    descriptionArea
-                            .setText("What does it do?:\n\nSelect an algorithm from the list to see its description.");
+                    // Image file missing — show a readable fallback instead of crashing
+                    imageLabel.setIcon(null);
+                    imageLabel.setText("<html><center><b>" + algorithms[idx] + "</b><br><br>"
+                            + "(diagram image not found)</center></html>");
+                }
+            } else {
+                // Nothing selected — revert to cover image or placeholder text
+                descriptionArea.setText(
+                        "What does it do?:\n\nSelect an algorithm from the list to see its description.");
+                if (coverIconHolder[0] != null) {
+                    ImageIcon scaled = loadImage("/img/cover.png", imageLabel, defaultWidth, defaultHeight);
+                    imageLabel.setIcon(scaled != null ? scaled : coverIconHolder[0]);
+                    imageLabel.setText("");
+                } else {
+                    imageLabel.setIcon(null);
+                    imageLabel.setText("<html><center>Select an algorithm<br>to see its diagram</center></html>");
                 }
             }
         });
 
-        // Add Right Container to Main Layout
+        // === Add Right Container to Main Layout ===
         gbcMain.gridx = 1;
         gbcMain.gridy = 0;
         gbcMain.weightx = 0.62;
         gbcMain.insets = new Insets(0, 5, 0, 0);
         add(rightContainer, gbcMain);
     }
-
 }
