@@ -4,7 +4,7 @@ _This project is developed by **Jake Mondragon**, **Benedict Pagba**, **Justin M
 
 ## Overview
 
-This application is an implementation in Java of 66 Disk Scheduling Algorithms: FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK.
+This application is an implementation in Java of 6 Disk Scheduling Algorithms: FCFS, SSTF, SCAN, C-SCAN, LOOK, C-LOOK.
 ## Appendix A
 
 - The cylinder line is always starting with 0 and ending with 199.
