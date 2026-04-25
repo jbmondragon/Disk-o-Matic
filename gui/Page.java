@@ -358,8 +358,7 @@ public class Page extends JPanel {
         }
         textField.setText(sb.toString());
         frameField.setText(String.valueOf(random.nextInt(CYLINDER_MAX + 1)));
-        directionCombo.setSelectedIndex(random.nextBoolean() ? 0 : 1);
-        algoCombo.setSelectedIndex(random.nextInt(ALGORITHMS.length - 1));
+        // Do not randomize direction or algorithm selection
     }
 
     private void importFile() {

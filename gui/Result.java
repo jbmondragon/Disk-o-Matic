@@ -37,7 +37,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSlider;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
@@ -88,7 +90,7 @@ public class Result extends JPanel {
     private final RoundedPanel exportPanel;
     private final JLabel algorithmTitleLabel;
     private final JLabel headLabel;
-    private final JLabel queueLabel;
+    private final JTextField queueField;
     private final JLabel totalSeekLabel;
     private final JLabel timerLabel;
     private final JLabel directionBadge;
@@ -149,7 +151,35 @@ public class Result extends JPanel {
         infoPanel.setOpaque(false);
 
         headLabel = createInfoLabel("Head of Queue: --");
-        queueLabel = createInfoLabel("Queue: --");
+
+        JPanel queuePanel = new JPanel(new BorderLayout());
+        queuePanel.setOpaque(false);
+        queuePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        queuePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+
+        JLabel queuePrefixLabel = createInfoLabel("Queue:");
+        queuePrefixLabel.setBorder(new EmptyBorder(0, 0, 0, 8));
+
+        queueField = new JTextField("--");
+        queueField.setEditable(false);
+        queueField.setFocusable(false);
+        queueField.setBorder(BorderFactory.createEmptyBorder());
+        queueField.setFont(new Font("Arial", Font.PLAIN, 22));
+        queueField.setForeground(MAROON);
+        queueField.setBackground(CANVAS_BG);
+
+        JScrollPane queueScrollPane = new JScrollPane(queueField,
+                JScrollPane.VERTICAL_SCROLLBAR_NEVER,
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        queueScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        queueScrollPane.setOpaque(false);
+        queueScrollPane.getViewport().setOpaque(false);
+        queueScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
+        queueScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        queueScrollPane.setPreferredSize(new Dimension(470, 34));
+
+        queuePanel.add(queuePrefixLabel, BorderLayout.WEST);
+        queuePanel.add(queueScrollPane, BorderLayout.CENTER);
 
         RoundedPanel divider = new RoundedPanel(new Color(181, 120, 130), 8, false);
         divider.setPreferredSize(new Dimension(470, 6));
@@ -170,7 +200,7 @@ public class Result extends JPanel {
 
         infoPanel.add(headLabel);
         infoPanel.add(Box.createVerticalStrut(6));
-        infoPanel.add(queueLabel);
+        infoPanel.add(queuePanel);
         infoPanel.add(Box.createVerticalStrut(10));
         infoPanel.add(divider);
         infoPanel.add(Box.createVerticalStrut(10));
@@ -324,7 +354,8 @@ public class Result extends JPanel {
         elapsedSeconds = 0.0;
         algorithmTitleLabel.setText("Algorithm: --");
         headLabel.setText("Head of Queue: --");
-        queueLabel.setText("Queue: --");
+        queueField.setText("--");
+        queueField.setCaretPosition(0);
         totalSeekLabel.setText("Total Seek Time: --");
         timerLabel.setText("Timer: 00.00");
         directionBadge.setText("RIGHT");
@@ -345,7 +376,8 @@ public class Result extends JPanel {
         currentSummary = summary;
         algorithmTitleLabel.setText("Algorithm: " + summary.getAlgorithmName());
         headLabel.setText("Head of Queue: " + currentHeadPosition);
-        queueLabel.setText("Queue: " + buildQueueText(currentQueue));
+        queueField.setText(buildQueueText(currentQueue));
+        queueField.setCaretPosition(0);
         totalSeekLabel.setText("Total Seek Time: " + summary.getTotalSeekTime());
         directionBadge.setText(currentDirection);
         graphPanel.setSummary(summary);
