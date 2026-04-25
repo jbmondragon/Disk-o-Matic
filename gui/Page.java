@@ -1,19 +1,29 @@
 package gui;
 
-import algorithms.PageReplacementSimulator;
-import algorithms.SimulationResult;
+import algorithms.CLOOK;
+import algorithms.CSCAN;
+import algorithms.DiskSchedulingAlgorithm;
+import algorithms.FCFS;
+import algorithms.LOOK;
+import algorithms.SCAN;
+import algorithms.SSTF;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,23 +31,27 @@ import org.w3c.dom.NodeList;
 
 public class Page extends JPanel {
 
-    private Mainframe mainframe;
-    private JComboBox<String> algoCombo;
-    private JTextField lengthField;
-    private JTextField textField;
-    private JTextField frameField;
+    private final Mainframe mainframe;
+    private final JComboBox<String> algoCombo;
+    private final JComboBox<String> directionCombo;
+    private final JTextField lengthField;
+    private final JTextField textField;
+    private final JTextField frameField;
     private static final int ICON_SIZE = 26;
+    private static final int CYLINDER_MIN = 0;
+    private static final int CYLINDER_MAX = 199;
+    private static final int MAX_QUEUE_LENGTH = 40;
 
-    // Updated to match the instructions/mockup exactly
     private static final String[] ALGORITHMS = {
             "FCFS",
             "SSTF",
             "SCAN",
             "C-SCAN",
             "LOOK",
-            "C-LOOK"
+            "C-LOOK",
+            "All Algorithms"
     };
-    private final PageReplacementSimulator simulator = new PageReplacementSimulator();
+    private final Random random = new Random();
 
     public Page(Mainframe frame) {
         this.mainframe = frame;
@@ -139,6 +153,22 @@ public class Page extends JPanel {
         textField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(185, 185, 185), 1, true),
                 BorderFactory.createEmptyBorder(0, 20, 0, 20)));
+        textField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                syncLengthField();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                syncLengthField();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                syncLengthField();
+            }
+        });
 
         JLabel lengthLabel = new JLabel("Length of Queue");
         lengthLabel.setFont(new Font("Arial", Font.BOLD, 16));
@@ -154,6 +184,9 @@ public class Page extends JPanel {
         lengthField.setAlignmentX(Component.CENTER_ALIGNMENT);
         lengthField.setBackground(new Color(245, 248, 252));
         lengthField.setBorder(textField.getBorder());
+        lengthField.setEditable(false);
+        lengthField.setFocusable(false);
+        lengthField.setText("0");
 
         JLabel frameLabel = new JLabel("Head of Queue");
         frameLabel.setFont(new Font("Arial", Font.BOLD, 16));
@@ -210,7 +243,7 @@ public class Page extends JPanel {
         algoBox.setAlignmentX(Component.LEFT_ALIGNMENT);
         algoBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, 180));
 
-        JLabel algoLbl = new JLabel("<html>Select A Page Replacement Algorithm To Simulate:</html>");
+        JLabel algoLbl = new JLabel("<html>Select A Disk Scheduling Algorithm To Simulate:</html>");
         algoLbl.setForeground(new Color(81, 97, 113));
         algoLbl.setFont(new Font("Arial", Font.PLAIN, 11));
         algoLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -220,9 +253,23 @@ public class Page extends JPanel {
         algoCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         algoCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        JLabel directionLbl = new JLabel("Initial Head Direction:");
+        directionLbl.setForeground(new Color(81, 97, 113));
+        directionLbl.setFont(new Font("Arial", Font.PLAIN, 11));
+        directionLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        directionCombo = new JComboBox<>(new String[] { "Right", "Left" });
+        directionCombo.setFont(new Font("Arial", Font.PLAIN, 12));
+        directionCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        directionCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
+
         algoBox.add(algoLbl);
         algoBox.add(Box.createVerticalStrut(7));
         algoBox.add(algoCombo);
+        algoBox.add(Box.createVerticalStrut(6));
+        algoBox.add(directionLbl);
+        algoBox.add(Box.createVerticalStrut(7));
+        algoBox.add(directionCombo);
         algoBox.add(Box.createVerticalStrut(6));
 
         rightPanel.add(algoBox);
@@ -294,20 +341,25 @@ public class Page extends JPanel {
                 return null;
             Image scaled = img.getScaledInstance(targetSize, targetSize, Image.SCALE_SMOOTH);
             return new ImageIcon(scaled);
-        } catch (Exception ex) {
+        } catch (java.io.IOException | RuntimeException ex) {
             System.err.println("Could not load icon: " + path + " - " + ex.getMessage());
             return null;
         }
     }
 
     private void randomFill() {
-        PageReplacementSimulator.SimulationInput randInput = simulator.generateRandomInput();
+        int queueLength = random.nextInt(11) + 5;
         StringBuilder sb = new StringBuilder();
-        for (int num : randInput.getReferenceString()) {
-            sb.append(num).append(" ");
+        for (int index = 0; index < queueLength; index++) {
+            if (index > 0) {
+                sb.append(' ');
+            }
+            sb.append(random.nextInt(CYLINDER_MAX + 1));
         }
-        textField.setText(sb.toString().trim());
-        frameField.setText(String.valueOf(randInput.getFrameSize()));
+        textField.setText(sb.toString());
+        frameField.setText(String.valueOf(random.nextInt(CYLINDER_MAX + 1)));
+        directionCombo.setSelectedIndex(random.nextBoolean() ? 0 : 1);
+        algoCombo.setSelectedIndex(random.nextInt(ALGORITHMS.length - 1));
     }
 
     private void importFile() {
@@ -316,7 +368,7 @@ public class Page extends JPanel {
         if (dataDir.exists() && dataDir.isDirectory()) {
             fc.setCurrentDirectory(dataDir);
         }
-        fc.setDialogTitle("Import Reference String (.txt/.csv/.xlsx)");
+        fc.setDialogTitle("Import Disk Queue (.txt/.csv/.xlsx)");
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
                 "Text/CSV/XLSX files", "txt", "csv", "xlsx"));
         if (fc.showOpenDialog(SwingUtilities.getWindowAncestor(this)) != JFileChooser.APPROVE_OPTION)
@@ -337,32 +389,63 @@ public class Page extends JPanel {
                     error("File is empty.");
                     return;
                 }
-                // First row: reference string (comma or space separated)
-                String refLine = lines.get(0);
-                String refString = refLine.contains(",") ? refLine.replace(",", " ") : refLine;
-                textField.setText(refString.trim());
-                // Second row: frame size (use only the first value, ignore trailing commas)
-                if (lines.size() > 1) {
-                    String frameLine = lines.get(1).trim();
-                    String[] frameParts = frameLine.split(",");
-                    String frameValue = frameParts[0].trim();
-                    if (frameValue.isEmpty() || !frameValue.matches("\\d+")) {
-                        error("Frame size row must contain a valid number in the first column.");
-                        return;
+
+                int queueLineIndex = 0;
+                int headLineIndex = 1;
+                int directionLineIndex = 2;
+                if (lines.size() >= 2 && lines.get(0).matches("\\d+")
+                        && !normalizeQueueInput(lines.get(1)).matches("\\d+")) {
+                    queueLineIndex = 1;
+                    headLineIndex = 2;
+                    directionLineIndex = 3;
+                }
+
+                String queueLine = normalizeQueueInput(lines.get(queueLineIndex));
+                textField.setText(queueLine);
+
+                if (lines.size() > headLineIndex) {
+                    frameField.setText(lines.get(headLineIndex).trim().split("[,\\s]+")[0]);
+                }
+                if (lines.size() > directionLineIndex) {
+                    String direction = lines.get(directionLineIndex).trim().toLowerCase();
+                    if (direction.startsWith("l")) {
+                        directionCombo.setSelectedItem("Left");
+                    } else if (direction.startsWith("r")) {
+                        directionCombo.setSelectedItem("Right");
                     }
-                    frameField.setText(frameValue);
                 }
             } else if (name.endsWith(".xlsx")) {
-                java.util.List<String[]> rows = readXlsx(file);
+                List<String[]> rows = readXlsx(file);
                 if (rows.isEmpty()) {
                     error("Excel file is empty.");
                     return;
                 }
                 String[] firstRow = rows.get(0);
-                if (firstRow.length > 0)
-                    textField.setText(firstRow[0]);
-                if (firstRow.length > 1)
-                    frameField.setText(firstRow[1]);
+                int queueColumnIndex = 0;
+                int headColumnIndex = 1;
+                int directionColumnIndex = 2;
+                if (firstRow.length > 1 && firstRow[0].trim().matches("\\d+")
+                        && !normalizeQueueInput(firstRow[1]).matches("\\d+")) {
+                    queueColumnIndex = 1;
+                    headColumnIndex = 2;
+                    directionColumnIndex = 3;
+                }
+
+                if (firstRow.length > queueColumnIndex) {
+                    String queueLine = normalizeQueueInput(firstRow[queueColumnIndex]);
+                    textField.setText(queueLine);
+                }
+                if (firstRow.length > headColumnIndex) {
+                    frameField.setText(firstRow[headColumnIndex]);
+                }
+                if (firstRow.length > directionColumnIndex) {
+                    String direction = firstRow[directionColumnIndex].trim().toLowerCase();
+                    if (direction.startsWith("l")) {
+                        directionCombo.setSelectedItem("Left");
+                    } else if (direction.startsWith("r")) {
+                        directionCombo.setSelectedItem("Right");
+                    }
+                }
             } else {
                 error("Unsupported file type.");
             }
@@ -372,29 +455,34 @@ public class Page extends JPanel {
     }
 
     private void runSimulation() {
-        String refStr = textField.getText().trim();
-        String[] refParts = refStr.split("\\s+");
-        int[] referenceString = new int[refParts.length];
-
-        for (int i = 0; i < refParts.length; i++) {
-            try {
-                referenceString[i] = Integer.parseInt(refParts[i]);
-            } catch (NumberFormatException e) {
-                error("Reference string must contain only integers.");
-                return;
-            }
-        }
-
-        int frameSize;
+        final List<Integer> queue;
         try {
-            frameSize = Integer.parseInt(frameField.getText().trim());
-        } catch (NumberFormatException e) {
-            error("Frame size must be an integer.");
+            queue = parseQueue(textField.getText());
+        } catch (NumberFormatException ex) {
+            error("Cylinders in Queue must contain only integers from 0 to 199.");
             return;
         }
 
-        if (!simulator.validateInput(referenceString, frameSize)) {
-            error("Reference string must be 10-40 integers (0-20). Frame size must be 3-10.");
+        if (queue.isEmpty()) {
+            error("Enter at least one cylinder request.");
+            return;
+        }
+
+        if (queue.size() > MAX_QUEUE_LENGTH) {
+            error("The queue can contain at most 40 cylinder requests.");
+            return;
+        }
+
+        final int headPosition;
+        try {
+            headPosition = Integer.parseInt(frameField.getText().trim());
+        } catch (NumberFormatException ex) {
+            error("Head of Queue must be an integer from 0 to 199.");
+            return;
+        }
+
+        if (headPosition < CYLINDER_MIN || headPosition > CYLINDER_MAX) {
+            error("Head of Queue must be between 0 and 199.");
             return;
         }
 
@@ -404,40 +492,92 @@ public class Page extends JPanel {
             return;
         }
 
-        // --- SURGICALLY MAPPED NAMES FOR THE SIMULATOR ---
-        String algoName = selectedAlgo;
-        if (selectedAlgo.equals("OPT"))
-            algoName = "Optimal";
-        else if (selectedAlgo.equals("Second chance algorithm"))
-            algoName = "SecondChance";
-        else if (selectedAlgo.equals("Enhanced second chance algorithm"))
-            algoName = "EnhancedSecondChance";
+        String direction = ((String) directionCombo.getSelectedItem()).toLowerCase();
+        Map<String, Result.SimulationSummary> results = new LinkedHashMap<>();
 
-        if (selectedAlgo.equals("All Algorithms")) {
-            Map<String, SimulationResult> results = simulator.runAllAlgorithms(referenceString, frameSize);
-            mainframe.getResultPanel().startSimulation(results);
-        } else {
-            SimulationResult result = simulator.runAlgorithm(algoName, referenceString, frameSize);
-            if (result == null) {
-                error("Algorithm not found: " + algoName);
-                return;
+        if ("All Algorithms".equals(selectedAlgo)) {
+            for (String algorithmName : ALGORITHMS) {
+                if (!"All Algorithms".equals(algorithmName)) {
+                    results.put(algorithmName, executeAlgorithm(algorithmName, headPosition, queue, direction));
+                }
             }
-            Map<String, SimulationResult> singleResultMap = new LinkedHashMap<>();
-            singleResultMap.put(result.getAlgorithmName(), result);
-            mainframe.getResultPanel().startSimulation(singleResultMap);
+        } else {
+            results.put(selectedAlgo, executeAlgorithm(selectedAlgo, headPosition, queue, direction));
         }
 
+        mainframe.getResultPanel().startSimulation(results, headPosition, queue, direction);
+
         mainframe.showCard("RESULT");
+    }
+
+    private Result.SimulationSummary executeAlgorithm(String algorithmName, int headPosition, List<Integer> queue,
+            String direction) {
+        DiskSchedulingAlgorithm algorithm = createAlgorithm(algorithmName);
+        int totalSeekTime = algorithm.execute(headPosition, queue, direction);
+        return new Result.SimulationSummary(
+                algorithmName,
+                new ArrayList<>(algorithm.getServiceSequence()),
+                totalSeekTime,
+                algorithm.getAverageSeekTime());
+    }
+
+    private DiskSchedulingAlgorithm createAlgorithm(String algorithmName) {
+        return switch (algorithmName) {
+            case "FCFS" -> new FCFS();
+            case "SSTF" -> new SSTF();
+            case "SCAN" -> new SCAN();
+            case "C-SCAN" -> new CSCAN();
+            case "LOOK" -> new LOOK();
+            case "C-LOOK" -> new CLOOK();
+            default -> throw new IllegalArgumentException("Unsupported algorithm: " + algorithmName);
+        };
+    }
+
+    private String normalizeQueueInput(String input) {
+        return input.trim().replace(',', ' ');
+    }
+
+    private void syncLengthField() {
+        String normalized = normalizeQueueInput(textField.getText());
+        if (normalized.isBlank()) {
+            lengthField.setText("0");
+            return;
+        }
+
+        int count = 0;
+        for (String token : normalized.split("\\s+")) {
+            if (!token.isBlank()) {
+                count++;
+            }
+        }
+        lengthField.setText(String.valueOf(count));
+    }
+
+    private List<Integer> parseQueue(String input) {
+        String normalized = normalizeQueueInput(input);
+        List<Integer> queue = new ArrayList<>();
+        if (normalized.isBlank()) {
+            return queue;
+        }
+
+        for (String token : normalized.split("\\s+")) {
+            int value = Integer.parseInt(token);
+            if (value < CYLINDER_MIN || value > CYLINDER_MAX) {
+                throw new NumberFormatException("Cylinder out of range");
+            }
+            queue.add(value);
+        }
+        return queue;
     }
 
     private void error(String msg) {
         JOptionPane.showMessageDialog(this, msg, "Invalid Input", JOptionPane.WARNING_MESSAGE);
     }
 
-    private java.util.List<String[]> readXlsx(File file) throws Exception {
-        java.util.List<String[]> rows = new java.util.ArrayList<>();
+    private List<String[]> readXlsx(File file) throws Exception {
+        List<String[]> rows = new ArrayList<>();
         try (ZipFile zip = new ZipFile(file)) {
-            java.util.List<String> shared = new java.util.ArrayList<>();
+            List<String> shared = new ArrayList<>();
             ZipEntry sst = zip.getEntry("xl/sharedStrings.xml");
             if (sst != null) {
                 Document sstDoc = DocumentBuilderFactory.newInstance()
@@ -456,7 +596,7 @@ public class Page extends JPanel {
                 for (int i = 0; i < rowList.getLength(); i++) {
                     Element row = (Element) rowList.item(i);
                     NodeList cellList = row.getElementsByTagName("c");
-                    java.util.List<String> rowVals = new java.util.ArrayList<>();
+                    List<String> rowVals = new ArrayList<>();
                     for (int j = 0; j < cellList.getLength(); j++) {
                         Element c = (Element) cellList.item(j);
                         String type = c.getAttribute("t");
@@ -476,7 +616,7 @@ public class Page extends JPanel {
                         }
                         rowVals.add(v);
                     }
-                    rows.add(rowVals.toArray(new String[0]));
+                    rows.add(rowVals.toArray(String[]::new));
                 }
             }
         }

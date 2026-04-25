@@ -106,9 +106,9 @@ public class Help extends JPanel {
                            • Length of Queue: Maximum 40.
                            • Cylinders in Queue: Must be on 0 to 199.
                            • Head of Queue: Must be on 0 to 199.
-            
+
                         3. USE THE ACTION BUTTONS (right side)
-                           • Random: Generate random length of queue and its cylinders, head of queue, and disk scheduling algorithm to simulate.
+                                    • Random: Generate a random queue, head position, direction, and disk scheduling algorithm to simulate.
                            • Import: Load inputs from a file (.txt, .csv)
 
                         4. SELECT AN ALGORITHM
@@ -119,14 +119,14 @@ public class Help extends JPanel {
                            • Watch the simulation run in real-time!
 
                         6. SIMULATION CONTROLS
-                           • Speed Adjustment: Use the timer slider to speed up or slow down the simulation.
-                           • Visual Cues: The current scheduling process per queue will be highlighted as it goes along. 
-                           • Direction: Toggle between left and right firection as you see the difference it can make to the algorithms.
+                                    • Speed Adjustment: Use the speed slider on the results screen to slow down or speed up the animation.
+                                    • Visual Cues: The current head position is highlighted as the graph animates through the service sequence.
+                                    • Direction: Toggle between left and right direction before running the simulation.
 
                         7. Saving RESULTS
-                           • You can save all algorithm outputs as a PDF or Image file.
-                           • Filename format: (mmddyy_hhmmss_PG).
-                           
+                                    • You can export the current results screen as a PDF or PNG image file.
+                                    • Default filename format: (MMddyy_HHmmss_PG).
+
                         That's it! Experiment with different algorithms to see how they affect performance!
                         """);
 
@@ -145,22 +145,22 @@ public class Help extends JPanel {
 
         String[][] algorithms = {
                 { "FCFS (First-Come, First-Served)",
-                "Processes requests in the exact order they arrive in the queue. It often results in wild, inefficient swings across the disk." },
+                        "Processes requests in the exact order they arrive in the queue. It often results in wild, inefficient swings across the disk." },
 
                 { "SSTF (Shortest Seek Time First)",
-                "Always chooses the pending request closest to the current head position. Very efficient for total movement, but can cause 'starvation' for requests further away." },
+                        "Always chooses the pending request closest to the current head position. Very efficient for total movement, but can cause 'starvation' for requests further away." },
 
                 { "SCAN (Elevator Algorithm)",
-                "The head moves continuously in one direction, servicing requests until it hits the absolute edge of the disk (0 or 199), then reverses direction." },
+                        "The head moves continuously in one direction, servicing requests until it hits the absolute edge of the disk (0 or 199), then reverses direction." },
 
                 { "C-SCAN (Circular SCAN)",
-                "Moves in one direction to service requests until it hits the edge, jumps all the way back to the opposite edge WITHOUT servicing requests, and then repeats. Provides more uniform wait times." },
+                        "Moves in one direction to service requests until it hits the edge, jumps all the way back to the opposite edge WITHOUT servicing requests, and then repeats. Provides more uniform wait times." },
 
                 { "LOOK",
-                "Enhanced version of SCAN. The head moves in one direction but stops at the last request in that direction, reversing immediately as it does not go all the way to the disk edge" },
+                        "Enhanced version of SCAN. The head moves in one direction but stops at the last request in that direction, reversing immediately as it does not go all the way to the disk edge" },
 
                 { "C-LOOK",
-                "Enhanced version of C-SCAN. It moves in one direction, then jumps back to the absolute first or last request in the queue rather than traveling all the way to the absolute edges of the disk." }
+                        "Enhanced version of C-SCAN. It moves in one direction, then jumps back to the absolute first or last request in the queue rather than traveling all the way to the absolute edges of the disk." }
         };
 
         for (String[] algo : algorithms) {
@@ -245,29 +245,40 @@ public class Help extends JPanel {
         fileFormat.setFont(new Font("Monospaced", Font.PLAIN, 12));
         fileFormat.setBackground(SECTION_BG);
         fileFormat.setText("""
-                TXT/CSV Format (space or comma separated):
-                ----------------------------------------
-                The file should contain a single number for length of queue, then a line of integers for its cylinders.
-                It can be separated by using spaces or commas.
-                The third line should contain the number of Queue Head.
-
-                Ex.
+                    TXT/CSV Format (space or comma separated):
+                    ----------------------------------------
+                Supported format A:
                 Length of Queue
                 Cylinders of Queue
                 Queue Head
+                Direction (optional: Left or Right)
 
-                Ex of imported file:
-                6
-                58 40 178 31 199 32
-                67
+                Supported format B:
+                Cylinders of Queue
+                Queue Head
+                Direction (optional: Left or Right)
 
-                Or
-                6
-                58, 40, 178, 31, 199, 32
-                67
+                The queue can be separated by spaces or commas.
 
-                """);
-        
+                    Ex.
+                    Length of Queue
+                    Cylinders of Queue
+                    Queue Head
+                Direction
+
+                    Ex of imported file:
+                    6
+                    58 40 178 31 199 32
+                    67
+                Right
+
+                    Or
+                    58, 40, 178, 31, 199, 32
+                    67
+                Left
+
+                    """);
+
         fileFormatPanel.add(fileFormat, BorderLayout.CENTER);
         contentPanel.add(fileFormatPanel);
 
@@ -286,7 +297,7 @@ public class Help extends JPanel {
         example.setFont(new Font("Monospaced", Font.PLAIN, 12));
         example.setBackground(SECTION_BG);
         example.setText("""
-                            Length of Queue      
+                            Length of Queue
                                    6
                            Cylinders of Queue
                            58 40 178 31 199 32
@@ -356,8 +367,10 @@ public class Help extends JPanel {
 
         String[][] patterns = {
                 { "The Elevator Style", "Using SCAN and LOOK on any queue shows how it operates like an elevator." },
-                { "The Starvation Trap", "Input '20 21 22 23 26 27 28 199' to see how SSTF acts and takes 199 only at the end." },
-                { "The Edge Difference", "Notice how SCAN and C-SCAN needs to touch the edge while LOOK and C-LOOK only goes for the max or min limit of the queue." },
+                { "The Starvation Trap",
+                        "Input '20 21 22 23 26 27 28 199' to see how SSTF acts and takes 199 only at the end." },
+                { "The Edge Difference",
+                        "Notice how SCAN and C-SCAN needs to touch the edge while LOOK and C-LOOK only goes for the max or min limit of the queue." },
         };
 
         for (String[] pattern : patterns) {
@@ -400,10 +413,14 @@ public class Help extends JPanel {
         contentPanel.setBackground(HELP_BG);
 
         String[][] faqs = {
-                { "What does 'Total Head Movement' mean?", "It is the total number of tracks the read/write head crossed to complete all requests." },
-                { "Why does the graph jump straight to the edge in C-SCAN or min/max queue in C-LOOK?", "Those algorithms only service requests in one direction." },
-                { "How do I save my work?", "Use the export button to export results as a PDF or Image following the (mmddyy_hhmmss_PG) format." },
-                { "Why is the process highlighted at times?", "The highlight helps identify the process and queues met in real-time." }
+                { "What does 'Total Head Movement' mean?",
+                        "It is the total number of tracks the read/write head crossed to complete all requests." },
+                { "Why does the graph jump straight to the edge in C-SCAN or min/max queue in C-LOOK?",
+                        "Those algorithms only service requests in one direction." },
+                { "How do I save my work?",
+                        "Use the Export Image or Export PDF button on the results screen. The default filename follows the (MMddyy_HHmmss_PG) format." },
+                { "Why is the process highlighted at times?",
+                        "The highlight marks the current head position while the graph animation moves through the service sequence." }
         };
 
         for (String[] faq : faqs) {

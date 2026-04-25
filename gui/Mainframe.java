@@ -22,8 +22,8 @@ public class Mainframe extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // prevent user from shrinking window too far
         setMinimumSize(new Dimension(1500, 900));
+        setSize(1500, 900);
         setResizable(false);
-        setLocationRelativeTo(null);
 
         // Main panel with CardLayout to switch views
         cardLayout = new CardLayout();
@@ -46,6 +46,7 @@ public class Mainframe extends JFrame {
         mainPanel.add(helpPanel, "HELP");
 
         add(mainPanel);
+        setLocationRelativeTo(null);
 
         // Show the initial screen
         cardLayout.show(mainPanel, "MENU");

@@ -1,6 +1,8 @@
 package gui;
 
 import java.awt.*;
+import java.io.File;
+import java.net.URL;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -187,12 +189,14 @@ public class Menu extends JPanel {
         rightBottom.setBackground(Mainframe.BG_LIGHT_GRAY);
         JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
         // Show cover image by default, but scale it dynamically like the others
-        ImageIcon coverIcon = new ImageIcon(getClass().getResource("/img/cover.png"));
+        ImageIcon coverIcon = loadImageIcon("/img/cover.png");
         // Use a default size for initial display
         int defaultWidth = 400;
         int defaultHeight = 300;
-        Image scaledCover = coverIcon.getImage().getScaledInstance(defaultWidth, defaultHeight, Image.SCALE_SMOOTH);
-        imageLabel.setIcon(new ImageIcon(scaledCover));
+        if (coverIcon != null) {
+            Image scaledCover = coverIcon.getImage().getScaledInstance(defaultWidth, defaultHeight, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(scaledCover));
+        }
 
         // Ensure the cover image always matches the size of the algorithm images
         rightBottom.addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -200,7 +204,7 @@ public class Menu extends JPanel {
             public void componentResized(java.awt.event.ComponentEvent e) {
                 int width = imageLabel.getWidth();
                 int height = imageLabel.getHeight();
-                if (width > 0 && height > 0 && algoList.getSelectedIndex() == -1) {
+                if (coverIcon != null && width > 0 && height > 0 && algoList.getSelectedIndex() == -1) {
                     Image scaled = coverIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
                     imageLabel.setIcon(new ImageIcon(scaled));
                 }
@@ -222,9 +226,8 @@ public class Menu extends JPanel {
                 int selectedIndex = algoList.getSelectedIndex();
                 if (selectedIndex != -1) {
                     descriptionArea.setText("What does it do?:\n\n" + descriptions[selectedIndex]);
-                    var url = getClass().getResource(imageFiles[selectedIndex]);
-                    if (url != null) {
-                        ImageIcon icon = new ImageIcon(url);
+                    ImageIcon icon = loadImageIcon(imageFiles[selectedIndex]);
+                    if (icon != null) {
                         int width = imageLabel.getWidth();
                         int height = imageLabel.getHeight();
                         if (width > 0 && height > 0) {
@@ -240,10 +243,10 @@ public class Menu extends JPanel {
                     // No selection: revert to cover image and scale to current label size
                     int width = imageLabel.getWidth();
                     int height = imageLabel.getHeight();
-                    if (width > 0 && height > 0) {
+                    if (coverIcon != null && width > 0 && height > 0) {
                         Image scaledCover2 = coverIcon.getImage().getScaledInstance(width, height, Image.SCALE_SMOOTH);
                         imageLabel.setIcon(new ImageIcon(scaledCover2));
-                    } else {
+                    } else if (coverIcon != null) {
                         Image scaledCover2 = coverIcon.getImage().getScaledInstance(defaultWidth, defaultHeight,
                                 Image.SCALE_SMOOTH);
                         imageLabel.setIcon(new ImageIcon(scaledCover2));
@@ -260,6 +263,21 @@ public class Menu extends JPanel {
         gbcMain.weightx = 0.62;
         gbcMain.insets = new Insets(0, 5, 0, 0);
         add(rightContainer, gbcMain);
+    }
+
+    private ImageIcon loadImageIcon(String resourcePath) {
+        URL url = getClass().getResource(resourcePath);
+        if (url != null) {
+            return new ImageIcon(url);
+        }
+
+        String relativePath = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        File file = new File(relativePath);
+        if (file.exists()) {
+            return new ImageIcon(file.getAbsolutePath());
+        }
+
+        return null;
     }
 
 }
