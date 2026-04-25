@@ -6,6 +6,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -37,6 +38,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
@@ -44,6 +46,7 @@ import javax.swing.SwingConstants;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.plaf.basic.BasicScrollBarUI;
 
 public class Result extends JPanel {
 
@@ -152,10 +155,10 @@ public class Result extends JPanel {
 
         headLabel = createInfoLabel("Head of Queue: --");
 
-        JPanel queuePanel = new JPanel(new BorderLayout());
+        JPanel queuePanel = new JPanel(new BorderLayout(0, 8));
         queuePanel.setOpaque(false);
         queuePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        queuePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        queuePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
 
         JLabel queuePrefixLabel = createInfoLabel("Queue:");
         queuePrefixLabel.setBorder(new EmptyBorder(0, 0, 0, 8));
@@ -163,10 +166,14 @@ public class Result extends JPanel {
         queueField = new JTextField("--");
         queueField.setEditable(false);
         queueField.setFocusable(false);
-        queueField.setBorder(BorderFactory.createEmptyBorder());
-        queueField.setFont(new Font("Arial", Font.PLAIN, 22));
+        queueField.setBorder(new EmptyBorder(0, 8, 0, 8));
+        queueField.setFont(new Font("Arial", Font.PLAIN, 18));
         queueField.setForeground(MAROON);
-        queueField.setBackground(CANVAS_BG);
+        queueField.setBackground(new Color(249, 236, 208));
+        queueField.setCaretColor(MAROON);
+        queueField.setPreferredSize(new Dimension(400, 26));
+        queueField.setMinimumSize(new Dimension(100, 26));
+        queueField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
 
         JScrollPane queueScrollPane = new JScrollPane(queueField,
                 JScrollPane.VERTICAL_SCROLLBAR_NEVER,
@@ -175,11 +182,20 @@ public class Result extends JPanel {
         queueScrollPane.setOpaque(false);
         queueScrollPane.getViewport().setOpaque(false);
         queueScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        queueScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        queueScrollPane.setPreferredSize(new Dimension(470, 34));
+        queueScrollPane.setMaximumSize(new Dimension(470, 40));
+        queueScrollPane.setPreferredSize(new Dimension(470, 40));
+        queueScrollPane.getHorizontalScrollBar().setUnitIncrement(20);
+        queueScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 10));
+        queueScrollPane.getHorizontalScrollBar().setOpaque(false);
+        styleQueueScrollBar(queueScrollPane.getHorizontalScrollBar());
+
+        RoundedPanel queueScrollShell = new RoundedPanel(new Color(232, 209, 170), 18, false);
+        queueScrollShell.setLayout(new BorderLayout());
+        queueScrollShell.setBorder(new EmptyBorder(6, 8, 4, 8));
+        queueScrollShell.add(queueScrollPane, BorderLayout.CENTER);
 
         queuePanel.add(queuePrefixLabel, BorderLayout.WEST);
-        queuePanel.add(queueScrollPane, BorderLayout.CENTER);
+        queuePanel.add(queueScrollShell, BorderLayout.CENTER);
 
         RoundedPanel divider = new RoundedPanel(new Color(181, 120, 130), 8, false);
         divider.setPreferredSize(new Dimension(470, 6));
@@ -354,8 +370,7 @@ public class Result extends JPanel {
         elapsedSeconds = 0.0;
         algorithmTitleLabel.setText("Algorithm: --");
         headLabel.setText("Head of Queue: --");
-        queueField.setText("--");
-        queueField.setCaretPosition(0);
+        updateQueueFieldText("--");
         totalSeekLabel.setText("Total Seek Time: --");
         timerLabel.setText("Timer: 00.00");
         directionBadge.setText("RIGHT");
@@ -376,8 +391,7 @@ public class Result extends JPanel {
         currentSummary = summary;
         algorithmTitleLabel.setText("Algorithm: " + summary.getAlgorithmName());
         headLabel.setText("Head of Queue: " + currentHeadPosition);
-        queueField.setText(buildQueueText(currentQueue));
-        queueField.setCaretPosition(0);
+        updateQueueFieldText(buildQueueText(currentQueue));
         totalSeekLabel.setText("Total Seek Time: " + summary.getTotalSeekTime());
         directionBadge.setText(currentDirection);
         graphPanel.setSummary(summary);
@@ -471,6 +485,62 @@ public class Result extends JPanel {
             builder.append(queue.get(index));
         }
         return builder.toString();
+    }
+
+    private void updateQueueFieldText(String text) {
+        queueField.setText(text);
+        FontMetrics metrics = queueField.getFontMetrics(queueField.getFont());
+        int preferredWidth = Math.max(400, metrics.stringWidth(text) + 40);
+        queueField.setPreferredSize(new Dimension(preferredWidth, 26));
+        queueField.setCaretPosition(0);
+        queueField.revalidate();
+    }
+
+    private void styleQueueScrollBar(JScrollBar scrollBar) {
+        scrollBar.setBorder(BorderFactory.createEmptyBorder());
+        scrollBar.setUI(new BasicScrollBarUI() {
+            @Override
+            protected void configureScrollBarColors() {
+                thumbColor = MAROON;
+                trackColor = new Color(223, 193, 151);
+            }
+
+            @Override
+            protected JButton createDecreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected JButton createIncreaseButton(int orientation) {
+                return createZeroButton();
+            }
+
+            @Override
+            protected void paintThumb(Graphics graphics, javax.swing.JComponent component, java.awt.Rectangle bounds) {
+                Graphics2D g2 = (Graphics2D) graphics.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(MAROON);
+                g2.fillRoundRect(bounds.x, bounds.y + 1, bounds.width, Math.max(6, bounds.height - 2), 8, 8);
+                g2.dispose();
+            }
+
+            @Override
+            protected void paintTrack(Graphics graphics, javax.swing.JComponent component, java.awt.Rectangle bounds) {
+                Graphics2D g2 = (Graphics2D) graphics.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(223, 193, 151));
+                g2.fillRoundRect(bounds.x, bounds.y + 2, bounds.width, Math.max(4, bounds.height - 4), 8, 8);
+                g2.dispose();
+            }
+
+            private JButton createZeroButton() {
+                JButton button = new JButton();
+                button.setPreferredSize(new Dimension(0, 0));
+                button.setMinimumSize(new Dimension(0, 0));
+                button.setMaximumSize(new Dimension(0, 0));
+                return button;
+            }
+        });
     }
 
     private void exportResults() {
@@ -675,7 +745,7 @@ public class Result extends JPanel {
                 g2.fillOval(placement.centerX() - (current ? 5 : 3), axisY - (current ? 5 : 3), current ? 10 : 6,
                         current ? 10 : 6);
 
-                g2.setFont(new Font("Arial", current ? Font.BOLD : Font.PLAIN, current ? 12 : 11));
+                g2.setFont(new Font("Arial", current ? Font.BOLD : Font.PLAIN, placement.fontSize()));
                 g2.drawString(String.valueOf(placement.value()), placement.leftX(), placement.baseY());
             }
 
@@ -762,50 +832,43 @@ public class Result extends JPanel {
                 int right,
                 int width) {
             List<AxisLabelPlacement> placements = new ArrayList<>();
-            int minGap = 4;
-            int[] rowBaseY = new int[] { 28, 42, 56 };
-            int[] rowNextLeft = new int[] { left, left, left };
-            Font baseFont = new Font("Arial", Font.PLAIN, 11);
-            g2.setFont(baseFont);
+            int minGap = 8;
+            int baseY = 28;
+            int maxWidth = right - left;
+            int fontSize = 11;
+            Font fitFont = new Font("Arial", Font.PLAIN, fontSize);
+            g2.setFont(fitFont);
 
+            // Try to fit all labels, reduce gap/font if needed
+            while (true) {
+                int totalWidth = 0;
+                for (int marker : markers) {
+                    String text = String.valueOf(marker);
+                    totalWidth += g2.getFontMetrics(fitFont).stringWidth(text) + minGap;
+                }
+                if (totalWidth < maxWidth || fontSize <= 7)
+                    break;
+                fontSize--;
+                minGap = Math.max(2, minGap - 1);
+                fitFont = new Font("Arial", Font.PLAIN, fontSize);
+                g2.setFont(fitFont);
+            }
+
+            int lastRight = left - minGap;
             for (int marker : markers) {
                 String text = String.valueOf(marker);
-                int textWidth = g2.getFontMetrics(baseFont).stringWidth(text);
+                int textWidth = g2.getFontMetrics(fitFont).stringWidth(text);
                 int centerX = mapCylinder(marker, left, width);
                 int preferredLeft = centerX - (textWidth / 2);
-                int clampedLeft = Math.max(left, Math.min(preferredLeft, right - textWidth));
-
-                int row = 0;
-                while (row < rowNextLeft.length - 1 && clampedLeft < rowNextLeft[row]) {
-                    row++;
-                }
-                if (clampedLeft < rowNextLeft[row]) {
-                    clampedLeft = rowNextLeft[row];
-                }
-                if (clampedLeft + textWidth > right) {
-                    row = 0;
-                    int bestLeft = clampedLeft;
-                    int smallestOverflow = Integer.MAX_VALUE;
-                    for (int candidateRow = 0; candidateRow < rowNextLeft.length; candidateRow++) {
-                        int candidateLeft = Math.max(left, Math.min(right - textWidth, rowNextLeft[candidateRow]));
-                        int overflow = Math.max(0, (candidateLeft + textWidth) - right);
-                        if (overflow < smallestOverflow) {
-                            smallestOverflow = overflow;
-                            row = candidateRow;
-                            bestLeft = candidateLeft;
-                        }
-                    }
-                    clampedLeft = bestLeft;
-                }
-
-                rowNextLeft[row] = clampedLeft + textWidth + minGap;
-                placements.add(new AxisLabelPlacement(marker, centerX, clampedLeft, rowBaseY[row]));
+                int clampedLeft = Math.max(lastRight + minGap, Math.min(preferredLeft, right - textWidth));
+                placements.add(new AxisLabelPlacement(marker, centerX, clampedLeft, baseY, fontSize));
+                lastRight = clampedLeft + textWidth;
             }
             return placements;
         }
     }
 
-    private record AxisLabelPlacement(int value, int centerX, int leftX, int baseY) {
+    private record AxisLabelPlacement(int value, int centerX, int leftX, int baseY, int fontSize) {
     }
 
     private static class RoundedPanel extends JPanel {
