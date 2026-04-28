@@ -363,9 +363,9 @@ public class Page extends JPanel {
 
     private void importFile() {
         JFileChooser fc = new JFileChooser();
-        File dataDir = new File(System.getProperty("user.dir") + File.separator + "data");
-        if (dataDir.exists() && dataDir.isDirectory()) {
-            fc.setCurrentDirectory(dataDir);
+        File datasetDir = resolveDatasetDirectory();
+        if (datasetDir != null) {
+            fc.setCurrentDirectory(datasetDir);
         }
         fc.setDialogTitle("Import Disk Queue (.txt/.csv/.xlsx)");
         fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
@@ -388,69 +388,78 @@ public class Page extends JPanel {
                     error("File is empty.");
                     return;
                 }
-
-                int queueLineIndex = 0;
-                int headLineIndex = 1;
-                int directionLineIndex = 2;
-                if (lines.size() >= 2 && lines.get(0).matches("\\d+")
-                        && !normalizeQueueInput(lines.get(1)).matches("\\d+")) {
-                    queueLineIndex = 1;
-                    headLineIndex = 2;
-                    directionLineIndex = 3;
-                }
-
-                String queueLine = normalizeQueueInput(lines.get(queueLineIndex));
-                textField.setText(queueLine);
-
-                if (lines.size() > headLineIndex) {
-                    frameField.setText(lines.get(headLineIndex).trim().split("[,\\s]+")[0]);
-                }
-                if (lines.size() > directionLineIndex) {
-                    String direction = lines.get(directionLineIndex).trim().toLowerCase();
-                    if (direction.startsWith("l")) {
-                        directionCombo.setSelectedItem("Left");
-                    } else if (direction.startsWith("r")) {
-                        directionCombo.setSelectedItem("Right");
-                    }
-                }
+                applyImportedRows(lines);
             } else if (name.endsWith(".xlsx")) {
                 List<String[]> rows = readXlsx(file);
                 if (rows.isEmpty()) {
                     error("Excel file is empty.");
                     return;
                 }
-                String[] firstRow = rows.get(0);
-                int queueColumnIndex = 0;
-                int headColumnIndex = 1;
-                int directionColumnIndex = 2;
-                if (firstRow.length > 1 && firstRow[0].trim().matches("\\d+")
-                        && !normalizeQueueInput(firstRow[1]).matches("\\d+")) {
-                    queueColumnIndex = 1;
-                    headColumnIndex = 2;
-                    directionColumnIndex = 3;
-                }
-
-                if (firstRow.length > queueColumnIndex) {
-                    String queueLine = normalizeQueueInput(firstRow[queueColumnIndex]);
-                    textField.setText(queueLine);
-                }
-                if (firstRow.length > headColumnIndex) {
-                    frameField.setText(firstRow[headColumnIndex]);
-                }
-                if (firstRow.length > directionColumnIndex) {
-                    String direction = firstRow[directionColumnIndex].trim().toLowerCase();
-                    if (direction.startsWith("l")) {
-                        directionCombo.setSelectedItem("Left");
-                    } else if (direction.startsWith("r")) {
-                        directionCombo.setSelectedItem("Right");
+                List<String> lines = new ArrayList<>();
+                for (String[] row : rows) {
+                    String rowText = String.join(",", row).trim();
+                    if (!rowText.isEmpty()) {
+                        lines.add(rowText);
                     }
                 }
+                applyImportedRows(lines);
             } else {
                 error("Unsupported file type.");
             }
         } catch (Exception ex) {
             error("Failed to import: " + ex.getMessage());
         }
+    }
+
+    private File resolveDatasetDirectory() {
+        File[] candidates = {
+                new File(System.getProperty("user.dir"), "dataset"),
+                new File("dataset")
+        };
+        for (File candidate : candidates) {
+            if (candidate.exists() && candidate.isDirectory()) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private void applyImportedRows(List<String> lines) {
+        int queueLineIndex = 0;
+        int headLineIndex = 1;
+        int directionLineIndex = 2;
+
+        if (lines.size() >= 2 && looksLikeSingleNumber(lines.get(0)) && !looksLikeSingleNumber(lines.get(1))) {
+            queueLineIndex = 1;
+            headLineIndex = 2;
+            directionLineIndex = 3;
+        }
+
+        String queueLine = normalizeQueueInput(lines.get(queueLineIndex));
+        if (queueLine.isBlank()) {
+            throw new IllegalArgumentException("Queue row is empty.");
+        }
+        textField.setText(queueLine);
+
+        if (lines.size() <= headLineIndex) {
+            throw new IllegalArgumentException("Head row is missing.");
+        }
+
+        String headValue = lines.get(headLineIndex).trim().split("[,\\s]+")[0];
+        frameField.setText(headValue);
+
+        if (lines.size() > directionLineIndex) {
+            String direction = lines.get(directionLineIndex).trim().toLowerCase();
+            if (direction.startsWith("l")) {
+                directionCombo.setSelectedItem("Left");
+            } else if (direction.startsWith("r")) {
+                directionCombo.setSelectedItem("Right");
+            }
+        }
+    }
+
+    private boolean looksLikeSingleNumber(String value) {
+        return value.trim().matches("\\d+");
     }
 
     private void runSimulation() {
